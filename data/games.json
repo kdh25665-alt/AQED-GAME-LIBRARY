@@ -1,0 +1,24 @@
+[
+  {
+    "id": "demo-1",
+    "title": "Sample Adventure",
+    "genre": "مغامرات",
+    "version": "1.00",
+    "size": "—",
+    "description": "مثال توضيحي لمكتبة AQED.",
+    "cover": "https://placehold.co/600x800/151522/9b87ff?text=AQED+GAME",
+    "downloadUrl": "",
+    "updatedAt": "2026-11-25"
+  },
+  {
+    "id": "demo-2",
+    "title": "Sample Racing",
+    "genre": "سباق",
+    "version": "1.00",
+    "size": "—",
+    "description": "مثال توضيحي لمكتبة AQED.",
+    "cover": "https://placehold.co/600x800/151522/9b87ff?text=AQED+RACING",
+    "downloadUrl": "",
+    "updatedAt": "2026-11-25"
+  }
+]
