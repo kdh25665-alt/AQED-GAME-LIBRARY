@@ -1,66 +1,154 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090910">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AQED | مكتبة الألعاب</title>
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header class="topbar">
-<a class="brand" href="#home">
-<span class="brand-mark">A</span>
-<span><b>AQED</b><small>GAME LIBRARY</small></span>
-</a>
-<nav>
-<a href="#library">المكتبة</a>
-<a href="#about">عن المكتبة</a>
-</nav>
-<button class="admin-open" id="adminOpen">لوحة الإدارة</button>
+<header class="header">
+    <div class="logo">AQED<span>GAMES</span></div>
+    <a href="/admin.html" class="admin-link">لوحة الإدارة</a>
 </header>
 
-<main id="home">
+<main>
+
 <section class="hero">
-<div class="hero-glow"></div>
-<div class="hero-copy">
-<div class="eyebrow"><i></i> مكتبة مجتمع AQED</div>
-<h1>عالم ألعابك،<br><em>في مكان واحد.</em></h1>
-<p>اكتشف مكتبة ألعاب مجتمع AQED، تصفّح التفاصيل وابحث عن لعبتك بسهولة من الجوال أو الكمبيوتر أو متصفح PS4.</p>
-<div class="hero-actions">
-<a class="primary" href="#library">تصفح المكتبة <span>←</span></a>
-<span class="compat">مصممة لتناسب شاشة PS4</span>
-</div>
-</div>
-<div class="hero-art">
-<div class="orbit orbit-one"></div>
-<div class="orbit orbit-two"></div>
-<div class="console-card">
-<div class="console-logo">AQED</div>
-<div class="console-line"></div>
-<div class="console-caption">PLAY • DISCOVER • ENJOY</div>
-</div>
-<div class="float-chip chip-top">PS4 READY</div>
-<div class="float-chip chip-bottom">COMMUNITY LIBRARY</div>
-</div>
+    <div class="hero-content">
+        <span class="badge">AQED OFFICIAL LIBRARY</span>
+        <h1>اكتشف عالم <span>الألعاب</span></h1>
+        <p>مكتبتك الخاصة لألعاب وتطبيقات PS4</p>
+
+        <div class="search-box">
+            <span>⌕</span>
+            <input id="search" type="search"
+            placeholder="ابحث عن لعبة أو تطبيق...">
+        </div>
+    </div>
 </section>
 
-<section class="library-section" id="library">
-<div class="section-head">
-<div>
-<div class="eyebrow">اختَر مغامرتك القادمة</div>
-<h2>مكتبة الألعاب</h2>
-</div>
-<div class="count" id="gameCount">0 لعبة</div>
-</div>
+<section class="library">
 
-<div class="toolbar">
-<label class="search">
-<span>⌕</span>
-<input id="search" type="search" placeholder="ابحث عن لعبة..." autocomplete="off">
-</label>
+    <div class="section-title">
+        <div>
+            <h2>مكتبة الألعاب</h2>
+            <p>اكتشف أحدث الألعاب والتطبيقات</p>
+        </div>
+        <span id="count">0 لعبة</span>
+    </div>
 
-<div class="filters" id="filters">
-<button class="filter active" data-genre="الكل">الكل</button>
-<button class="filter" data-genre="
+    <div class="filters">
+        <button class="filter active" data-filter="all">الكل</button>
+        <button class="filter" data-filter="لعبة">الألعاب</button>
+        <button class="filter" data-filter="تطبيق">التطبيقات</button>
+    </div>
+
+    <div id="games" class="games-grid">
+        <div class="loading">جاري تحميل المكتبة...</div>
+    </div>
+
+</section>
+
+</main>
+
+<footer>
+    <h3>AQED GAMES</h3>
+    <p>جميع الحقوق محفوظة © AQED</p>
+</footer>
+
+<script>
+let games = [];
+let currentFilter = 'all';
+
+const container = document.getElementById('games');
+const search = document.getElementById('search');
+const count = document.getElementById('count');
+
+async function loadGames() {
+    try {
+        const response = await fetch('/api/games');
+        if (!response.ok) throw new Error();
+        games = await response.json();
+        renderGames();
+    } catch {
+        container.innerHTML = '<div class="empty">تعذر تحميل الألعاب حالياً</div>';
+    }
+}
+
+function renderGames() {
+    const query = search.value.trim().toLowerCase();
+
+    const filtered = games.filter(game => {
+        const matchesSearch = game.title.toLowerCase().includes(query);
+        const matchesFilter = currentFilter === 'all' ||
+            game.genre === currentFilter;
+
+        return matchesSearch && matchesFilter;
+    });
+
+    count.textContent = filtered.length + ' عنصر';
+
+    if (!filtered.length) {
+        container.innerHTML = `
+        <div class="empty">
+            <div>🎮</div>
+            <h3>لا توجد نتائج</h3>
+            <p>لم نعثر على ألعاب مطابقة لبحثك</p>
+        </div>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(game => `
+        <article class="game-card">
+            <div class="cover">
+                ${game.cover ?
+                `<img src="${escapeHTML(game.cover)}" alt="${escapeHTML(game.title)}">`
+                : '<div class="no-cover">🎮</div>'}
+                <span class="game-type">${escapeHTML(game.genre)}</span>
+            </div>
+
+            <div class="game-info">
+                <h3>${escapeHTML(game.title)}</h3>
+                <p>${escapeHTML(game.description || 'اكتشف اللعبة الآن')}</p>
+
+                <div class="game-details">
+                    <span>الإصدار: ${escapeHTML(game.version || '—')}</span>
+                    <span>${escapeHTML(game.size || '—')}</span>
+                </div>
+
+                ${game.downloadUrl ?
+                `<a class="download-btn" href="${escapeHTML(game.downloadUrl)}" target="_blank" rel="noopener noreferrer">تحميل الآن ↓</a>`
+                : '<span class="unavailable">رابط التحميل غير متوفر</span>'}
+            </div>
+        </article>
+    `).join('');
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#39;'
+    })[char]);
+}
+
+search.addEventListener('input', renderGames);
+
+document.querySelectorAll('.filter').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelector('.filter.active').classList.remove('active');
+        button.classList.add('active');
+        currentFilter = button.dataset.filter;
+        renderGames();
+    });
+});
+
+loadGames();
+</script>
+
+</body>
+</html>
