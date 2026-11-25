@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>AQED | إدارة المكتبة</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.admin-wrap{max-width:900px;margin:55px auto;padding:0 20px}.panel{background:#151922;border:1px solid #303744;border-radius:16px;padding:24px;margin:18px 0}.panel h1,.panel h2{margin-top:0}.admin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.admin-form input,.admin-form textarea,.admin-form select,.login-box input{width:100%;padding:13px;border-radius:9px;border:1px solid #46505e;background:#0d1118;color:#fff;font:inherit}.admin-form textarea{min-height:100px;grid-column:1/-1}.wide{grid-column:1/-1}.btn{border:0;border-radius:9px;padding:13px 20px;background:#7c3aed;color:#fff;font:inherit;font-weight:bold;cursor:pointer}.btn.danger{background:#a83245}.btn.secondary{background:#354052}.login-box{max-width:480px;margin:90px auto;text-align:center}.status{margin-top:12px;color:#fca5a5}.game-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #303744}.game-row:last-child{border:0}.muted{color:#aab2bf}@media(max-width:600px){.admin-form{grid-template-columns:1fr}.admin-form textarea,.wide{grid-column:auto}.game-row{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="header"><div class="logo">AQED<span>GAMES</span></div><a href="/" class="admin-link">عرض المكتبة</a></header>
+<main class="admin-wrap">
+<section id="login" class="panel login-box">
+<h1>دخول الإدارة</h1><p class="muted">هذه الصفحة مخصصة لصاحب المكتبة فقط.</p>
+<form id="loginForm"><input id="token" type="password" autocomplete="current-password" placeholder="كلمة مرور الإدارة" required><br><br><button class="btn" type="submit">دخول</button></form>
+<div id="loginStatus" class="status" role="alert"></div>
+</section>
+<section id="dashboard" hidden>
+<div class="panel"><h1>إدارة مكتبة AQED</h1><p class="muted">أضف الألعاب أو احذفها. التغييرات تظهر في واجهة العملاء.</p><button id="logout" class="btn secondary" type="button">تسجيل الخروج</button></div>
+<div class="panel"><h2>إضافة لعبة أو تطبيق</h2>
+<form id="addForm" class="admin-form">
+<input name="title" placeholder="اسم اللعبة" required maxlength="100">
+<select name="genre" required><option value="">اختر التصنيف</option><option value="لعبة">لعبة</option><option value="تطبيق">تطبيق</option></select>
+<input name="version" placeholder="الإصدار (اختياري)">
+<input name="size" placeholder="الحجم (اختياري)">
+<input class="wide" name="cover" type="url" placeholder="رابط صورة الغلاف (اختياري)">
+<input class="wide" name="downloadUrl" type="url" placeholder="رابط التحميل HTTPS (اختياري)">
+<textarea name="description" placeholder="وصف مختصر (اختياري)"></textarea>
+<button class="btn wide" type="submit">إضافة إلى المكتبة</button>
+</form><div id="addStatus" class="status" role="status"></div></div>
+<div class="panel"><h2>الألعاب الموجودة</h2><div id="gameList" class="muted">جاري التحميل...</div></div>
+</section>
+</main>
+<script>
+const login=document.getElementById('login'), dashboard=document.getElementById('dashboard');
+const statusBox=document.getElementById('loginStatus');
+let adminToken='';
+async function api(url,options={}){const headers={...(options.headers||{}),'x-admin-token':adminToken};if(options.body)headers['Content-Type']='application/json';const r=await fetch(url,{...options,headers});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'حدث خطأ');return data;}
+document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();adminToken=document.getElementById('token').value;statusBox.textContent='جارٍ التحقق...';try{await fetch('/api/admin/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:adminToken})}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||'تعذر تسجيل الدخول');});sessionStorage.setItem('aqedAdminToken',adminToken);login.hidden=true;dashboard.hidden=false;loadList();}catch(err){adminToken='';statusBox.textContent=err.message;}});
+document.getElementById('logout').addEventListener('click',()=>{adminToken='';sessionStorage.removeItem('aqedAdminToken');dashboard.hidden=true;login.hidden=false;document.getElementById('token').value='';});
+document.getElementById('addForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const data=Object.fromEntries(new FormData(form).entries());try{await api('/api/games',{method:'POST',body:JSON.stringify(data)});form.reset();document.getElementById('addStatus').textContent='تمت إضافة العنصر بنجاح.';loadList();}catch(err){document.getElementById('addStatus').textContent=err.message;}});
+async function loadList(){const box=document.getElementById('gameList');try{const games=await fetch('/api/games').then(r=>r.json());if(!games.length){box.textContent='لا توجد ألعاب حتى الآن.';return;}box.innerHTML=games.map(g=>`<div class="game-row"><div><strong>${esc(g.title)}</strong><div class="muted">${esc(g.genre)} · ${esc(g.version||'—')}</div></div><button class="btn danger" data-id="${esc(g.id)}">حذف</button></div>`).join('');box.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('هل تريد حذف هذا العنصر؟'))return;try{await api('/api/games/'+encodeURIComponent(b.dataset.id),{method:'DELETE'});loadList();}catch(err){alert(err.message);}}));}catch{box.textContent='تعذر تحميل القائمة.';}}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// Keep access for this browser tab only; the server still checks every write.
+const saved=sessionStorage.getItem('aqedAdminToken');if(saved){adminToken=saved;fetch('/api/admin/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:adminToken})}).then(r=>{if(r.ok){login.hidden=true;dashboard.hidden=false;loadList();}else{sessionStorage.removeItem('aqedAdminToken');adminToken='';}}).catch(()=>{});}
+</script>
+</body>
+</html>
