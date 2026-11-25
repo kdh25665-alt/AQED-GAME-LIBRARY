@@ -1,0 +1,8 @@
+{
+  "name": "aqed-ps4-library",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AQED community game library for PS4 browser and desktop/mobile",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
